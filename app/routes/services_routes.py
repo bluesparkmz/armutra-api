@@ -9,6 +9,7 @@ from app.deps import CurrentUser
 from app.models.service import Service
 from app.models.user import User
 from app.schemas.service import ServiceCreate, ServiceResponse
+from app.services import ads_service
 
 router = APIRouter(prefix="/services", tags=["services"])
 
@@ -32,7 +33,7 @@ def create_service(
     return _service_out(s)
 
 
-def _service_out(s: Service) -> ServiceResponse:
+def _service_out(s: Service, impulsionado: bool = False) -> ServiceResponse:
     return ServiceResponse(
         id=s.id,
         user_id=s.user_id,
@@ -41,6 +42,7 @@ def _service_out(s: Service) -> ServiceResponse:
         preco=str(Decimal(str(s.preco))),
         categoria=s.categoria,
         criado_em=s.criado_em,
+        impulsionado=impulsionado,
     )
 
 
@@ -64,5 +66,11 @@ def list_services(
     if q:
         like = f"%{q}%"
         qr = qr.filter((Service.titulo.ilike(like)) | (Service.descricao.ilike(like)))
-    rows = qr.order_by(Service.criado_em.desc()).offset(skip).limit(limit).all()
-    return [_service_out(s) for s in rows]
+    rows = (
+        qr.order_by(ads_service.service_rank().desc(), Service.criado_em.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    boosted = ads_service.active_ids(db)["service"]
+    return [_service_out(s, s.id in boosted) for s in rows]

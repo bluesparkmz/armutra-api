@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.db.init_db import init_db
-from app.routes import auth, connections, interactions, jobs, messages, notifications, posts, search, services_routes, users
+from app.routes import ads, auth, connections, interactions, jobs, messages, notifications, payments, posts, search, services_routes, users
 
 settings = get_settings()
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -45,6 +45,8 @@ app.include_router(messages.router)
 app.include_router(search.router)
 app.include_router(connections.router)
 app.include_router(notifications.router)
+app.include_router(payments.router)
+app.include_router(ads.router)
 
 
 @app.get("/health")

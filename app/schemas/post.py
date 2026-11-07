@@ -42,6 +42,7 @@ class PostResponse(BaseModel):
     likes_count: int = 0
     comments_count: int = 0
     shares_count: int = 0
+    impulsionado: bool = False
     autor: Optional[PostAuthorBrief] = None
 
     model_config = {"from_attributes": True}

@@ -22,6 +22,7 @@ class JobResponse(BaseModel):
     salario: str
     localizacao: str
     criado_em: datetime
+    impulsionado: bool = False
 
     model_config = {"from_attributes": True}
 

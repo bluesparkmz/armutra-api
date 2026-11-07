@@ -20,5 +20,6 @@ class ServiceResponse(BaseModel):
     preco: str
     categoria: str
     criado_em: datetime
+    impulsionado: bool = False
 
     model_config = {"from_attributes": True}

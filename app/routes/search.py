@@ -12,6 +12,7 @@ from app.schemas.service import ServiceResponse
 from app.schemas.user import UserPublicResponse
 from app.routes.services_routes import _service_out
 from app.routes.users import _to_public
+from app.services import ads_service
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -33,8 +34,17 @@ def search_jobs(
     if q:
         like = f"%{q}%"
         qr = qr.filter((Job.titulo.ilike(like)) | (Job.descricao.ilike(like)))
-    jobs = qr.order_by(Job.criado_em.desc()).offset(skip).limit(limit).all()
-    return [JobResponse.model_validate(j) for j in jobs]
+    jobs = (
+        qr.order_by(ads_service.job_rank().desc(), Job.criado_em.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    boosted = ads_service.active_ids(db)["job"]
+    return [
+        JobResponse.model_validate(j).model_copy(update={"impulsionado": j.id in boosted})
+        for j in jobs
+    ]
 
 
 @router.get("/services", response_model=list[ServiceResponse])
@@ -59,8 +69,14 @@ def search_services(
     if q:
         like = f"%{q}%"
         qr = qr.filter((Service.titulo.ilike(like)) | (Service.descricao.ilike(like)))
-    rows = qr.order_by(Service.criado_em.desc()).offset(skip).limit(limit).all()
-    return [_service_out(s) for s in rows]
+    rows = (
+        qr.order_by(ads_service.service_rank().desc(), Service.criado_em.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    boosted = ads_service.active_ids(db)["service"]
+    return [_service_out(s, s.id in boosted) for s in rows]
 
 
 @router.get("/users", response_model=list[UserPublicResponse])

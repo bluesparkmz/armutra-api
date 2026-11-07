@@ -7,6 +7,8 @@ from app.models.interaction import PostComment, PostLike, PostShare
 from app.models.message import Conversation, Message
 from app.models.connection import Connection
 from app.models.notification import Notification
+from app.models.payment import Payment
+from app.models.ad import Ad
 
 __all__ = [
     "User",
@@ -25,4 +27,6 @@ __all__ = [
     "Message",
     "Connection",
     "Notification",
+    "Payment",
+    "Ad",
 ]

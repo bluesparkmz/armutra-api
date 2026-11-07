@@ -9,11 +9,16 @@ from app.deps import CurrentUser
 from app.models.interaction import PostComment, PostLike, PostShare
 from app.models.post import Post, PostTipo
 from app.schemas.post import PostAuthorBrief, PostCreate, PostResponse
+from app.services import ads_service
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
-def _post_to_response(db: Session, post: Post) -> PostResponse:
+def _post_to_response(
+    db: Session, post: Post, boosted_ids: Optional[dict] = None
+) -> PostResponse:
+    if boosted_ids is None:
+        boosted_ids = ads_service.active_ids(db)
     likes_count = db.query(PostLike).filter(PostLike.post_id == post.id).count()
     comments_count = db.query(PostComment).filter(PostComment.post_id == post.id).count()
     shares_count = db.query(PostShare).filter(PostShare.post_id == post.id).count()
@@ -42,6 +47,7 @@ def _post_to_response(db: Session, post: Post) -> PostResponse:
         likes_count=likes_count,
         comments_count=comments_count,
         shares_count=shares_count,
+        impulsionado=ads_service.post_is_boosted(post, boosted_ids),
         autor=autor,
     )
 
@@ -82,11 +88,16 @@ def list_posts(
     limit: int = Query(20, ge=1, le=100),
     tipo: Optional[PostTipo] = None,
 ) -> list[PostResponse]:
-    q = db.query(Post).options(joinedload(Post.author)).order_by(Post.criado_em.desc())
+    q = (
+        db.query(Post)
+        .options(joinedload(Post.author))
+        .order_by(ads_service.post_rank().desc(), Post.criado_em.desc())
+    )
     if tipo is not None:
         q = q.filter(Post.tipo_post == tipo)
     rows = q.offset(skip).limit(limit).all()
-    return [_post_to_response(db, p) for p in rows]
+    boosted_ids = ads_service.active_ids(db)
+    return [_post_to_response(db, p, boosted_ids) for p in rows]
 
 
 @router.get("/{post_id}", response_model=PostResponse)

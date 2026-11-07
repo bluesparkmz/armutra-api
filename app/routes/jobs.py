@@ -9,6 +9,7 @@ from app.deps import CurrentUser
 from app.models.job import Job, JobApplication
 from app.models.user import UserType
 from app.schemas.job import JobApplyRequest, JobCreate, JobResponse
+from app.services import ads_service
 from app.services.notification_service import notify
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -58,8 +59,17 @@ def list_jobs(
         qr = qr.filter(
             (Job.titulo.ilike(like)) | (Job.descricao.ilike(like))
         )
-    jobs = qr.order_by(Job.criado_em.desc()).offset(skip).limit(limit).all()
-    return [JobResponse.model_validate(j) for j in jobs]
+    jobs = (
+        qr.order_by(ads_service.job_rank().desc(), Job.criado_em.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    boosted = ads_service.active_ids(db)["job"]
+    return [
+        JobResponse.model_validate(j).model_copy(update={"impulsionado": j.id in boosted})
+        for j in jobs
+    ]
 
 
 @router.post("/{job_id}/apply", status_code=status.HTTP_201_CREATED)
