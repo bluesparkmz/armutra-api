@@ -8,7 +8,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
-from app.deps import CurrentUser
+from app.deps import CurrentUser, is_admin_user
 from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
@@ -73,4 +73,4 @@ def refresh_token(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenR
 
 @router.get("/me", response_model=UserMeResponse)
 def me(user: CurrentUser) -> UserMeResponse:
-    return UserMeResponse.model_validate(user)
+    return UserMeResponse.model_validate(user).model_copy(update={"is_admin": is_admin_user(user)})

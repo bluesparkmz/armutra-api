@@ -54,5 +54,6 @@ class UserMeResponse(BaseModel):
     bio: Optional[str] = None
     localizacao: str
     criado_em: datetime
+    is_admin: bool = False
 
     model_config = {"from_attributes": True}

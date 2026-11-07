@@ -71,6 +71,14 @@ def expire_if_needed(db: Session, ad: Ad) -> None:
         ad.status = "expired"
 
 
+def expire_overdue(db: Session) -> None:
+    """Marca em massa como expirados os boosts cujo prazo terminou (com commit)."""
+    db.query(Ad).filter(Ad.status == "active", Ad.ends_at <= func.now()).update(
+        {Ad.status: "expired"}, synchronize_session=False
+    )
+    db.commit()
+
+
 def on_payment_final(db: Session, payment: Payment) -> None:
     """Chamado quando um pagamento fica 'success'/'failed'. Ativa o anúncio ligado (sem commit)."""
     if payment.status != "success":

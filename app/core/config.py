@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     UPLOAD_DIR: str = "./uploads"
 
+    # Emails (separados por vírgula) com acesso de administrador ao painel
+    ADMIN_EMAILS: str = ""
+
     # SkyWallet (pagamentos M-Pesa). As credenciais ficam só no servidor.
     SKYWALLET_API_BASE: str = "https://skywallet-api.bluesparkmz.com"
     SKYWALLET_SK_ID: str = ""
