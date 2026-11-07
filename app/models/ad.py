@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.models.payment import Payment
     from app.models.post import Post
     from app.models.service import Service
+    from app.models.user import User
 
 
 class Ad(Base):
@@ -60,6 +61,7 @@ class Ad(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    user: Mapped["User"] = relationship(foreign_keys=[user_id])
     job: Mapped[Optional["Job"]] = relationship(foreign_keys=[job_id])
     service: Mapped[Optional["Service"]] = relationship(foreign_keys=[service_id])
     post: Mapped[Optional["Post"]] = relationship(foreign_keys=[post_id])
