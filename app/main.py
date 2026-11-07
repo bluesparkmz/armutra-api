@@ -1,19 +1,28 @@
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
+from app.db.init_db import init_db
 from app.routes import auth, connections, interactions, jobs, messages, notifications, posts, search, services_routes, users
 
 settings = get_settings()
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+
 app = FastAPI(
     title="MABASSA API",
     description="Plataforma de serviços, empregos e feed profissional",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
