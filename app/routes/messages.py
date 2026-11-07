@@ -8,6 +8,7 @@ from app.deps import CurrentUser
 from app.models.message import Conversation, Message
 from app.models.user import User
 from app.schemas.message import MessageCreate, MessageItem, MessagesListResponse
+from app.services.notification_service import notify
 from app.utils.conversation import ordered_user_ids
 
 router = APIRouter(prefix="/messages", tags=["messages"])
@@ -48,6 +49,15 @@ def send_message(
         conteudo=body.conteudo,
     )
     db.add(msg)
+    notify(
+        db,
+        recipient_id=other.id,
+        actor=user,
+        tipo="message",
+        titulo="Nova mensagem",
+        mensagem=f"{user.nome} enviou-lhe uma mensagem.",
+        ref_id=conv.id,
+    )
     db.commit()
     db.refresh(conv)
     msgs = (

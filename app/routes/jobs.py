@@ -9,6 +9,7 @@ from app.deps import CurrentUser
 from app.models.job import Job, JobApplication
 from app.models.user import UserType
 from app.schemas.job import JobApplyRequest, JobCreate, JobResponse
+from app.services.notification_service import notify
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -100,6 +101,15 @@ def apply_job(
         mensagem=body.mensagem,
     )
     db.add(app)
+    notify(
+        db,
+        recipient_id=job.empresa_user_id,
+        actor=user,
+        tipo="job",
+        titulo="Nova candidatura",
+        mensagem=f"{user.nome} candidatou-se à vaga \"{job.titulo}\".",
+        ref_id=job.id,
+    )
     db.commit()
     db.refresh(app)
     return {"ok": True, "application_id": str(app.id)}

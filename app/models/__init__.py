@@ -5,6 +5,8 @@ from app.models.job import Job, JobApplication
 from app.models.service import Service
 from app.models.interaction import PostComment, PostLike, PostShare
 from app.models.message import Conversation, Message
+from app.models.connection import Connection
+from app.models.notification import Notification
 
 __all__ = [
     "User",
@@ -21,4 +23,6 @@ __all__ = [
     "PostShare",
     "Conversation",
     "Message",
+    "Connection",
+    "Notification",
 ]

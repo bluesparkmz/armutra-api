@@ -9,6 +9,7 @@ from app.models.interaction import PostComment, PostLike, PostShare
 from app.models.post import Post
 
 from app.schemas.interaction import CommentCreate, CommentResponse
+from app.services.notification_service import notify
 
 router = APIRouter(tags=["interactions"])
 
@@ -30,6 +31,15 @@ def like_post(
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já curtiu este post")
     db.add(PostLike(post_id=post_id, user_id=user.id))
+    notify(
+        db,
+        recipient_id=post.user_id,
+        actor=user,
+        tipo="like",
+        titulo="Novo gosto",
+        mensagem=f"{user.nome} gostou da sua publicação \"{post.titulo}\".",
+        ref_id=post.id,
+    )
     db.commit()
     return {"ok": True}
 
@@ -46,6 +56,15 @@ def comment_post(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post não encontrado")
     c = PostComment(post_id=post_id, user_id=user.id, conteudo=body.conteudo)
     db.add(c)
+    notify(
+        db,
+        recipient_id=post.user_id,
+        actor=user,
+        tipo="comment",
+        titulo="Novo comentário",
+        mensagem=f"{user.nome} comentou a sua publicação \"{post.titulo}\".",
+        ref_id=post.id,
+    )
     db.commit()
     db.refresh(c)
     return CommentResponse(
