@@ -7,11 +7,43 @@ from app.db.session import get_db
 from app.deps import CurrentUser
 from app.models.message import Conversation, Message
 from app.models.user import User
-from app.schemas.message import MessageCreate, MessageItem, MessagesListResponse
+from app.schemas.message import ConversationSummary, MessageCreate, MessageItem, MessagesListResponse
 from app.services.notification_service import notify
 from app.utils.conversation import ordered_user_ids
 
 router = APIRouter(prefix="/messages", tags=["messages"])
+
+
+@router.get("", response_model=list[ConversationSummary])
+def list_conversations(user: CurrentUser, db: Session = Depends(get_db)) -> list[ConversationSummary]:
+    rows = (
+        db.query(Conversation)
+        .options(
+            joinedload(Conversation.participant_a),
+            joinedload(Conversation.participant_b),
+            joinedload(Conversation.messages),
+        )
+        .filter(
+            (Conversation.participant_a_id == user.id) | (Conversation.participant_b_id == user.id)
+        )
+        .all()
+    )
+    summaries: list[ConversationSummary] = []
+    for conv in rows:
+        other = conv.participant_b if conv.participant_a_id == user.id else conv.participant_a
+        last = max(conv.messages, key=lambda m: m.criado_em) if conv.messages else None
+        summaries.append(
+            ConversationSummary(
+                id=conv.id,
+                outro_user_id=other.id,
+                outro_nome=other.nome,
+                outro_foto=other.foto_perfil,
+                ultima_mensagem=last.conteudo if last else None,
+                atualizado_em=last.criado_em if last else conv.criado_em,
+            )
+        )
+    summaries.sort(key=lambda item: item.atualizado_em, reverse=True)
+    return summaries
 
 
 @router.post("", response_model=MessagesListResponse, status_code=status.HTTP_201_CREATED)

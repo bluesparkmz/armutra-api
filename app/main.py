@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.db.init_db import init_db
-from app.routes import admin_ads, ads, auth, connections, interactions, jobs, messages, notifications, payments, posts, search, services_routes, users
+from app.routes import admin_ads, ads, auth, connections, interactions, jobs, messages, notifications, payments, posts, search, services_routes, uploads, users
 
 settings = get_settings()
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -33,8 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
-
+app.include_router(uploads.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(posts.router)
@@ -48,6 +47,7 @@ app.include_router(notifications.router)
 app.include_router(payments.router)
 app.include_router(ads.router)
 app.include_router(admin_ads.router)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 
 @app.get("/health")

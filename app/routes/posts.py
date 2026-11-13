@@ -8,6 +8,8 @@ from app.db.session import get_db
 from app.deps import CurrentUser
 from app.models.interaction import PostComment, PostLike, PostShare
 from app.models.post import Post, PostTipo
+from app.models.user import User
+from app.schemas.interaction import CommentResponse
 from app.schemas.post import PostAuthorBrief, PostCreate, PostResponse
 from app.services import ads_service
 
@@ -98,6 +100,28 @@ def list_posts(
     rows = q.offset(skip).limit(limit).all()
     boosted_ids = ads_service.active_ids(db)
     return [_post_to_response(db, p, boosted_ids) for p in rows]
+
+
+@router.get("/{post_id}/comments", response_model=list[CommentResponse])
+def list_comments(post_id: uuid_lib.UUID, db: Session = Depends(get_db)) -> list[CommentResponse]:
+    rows = (
+        db.query(PostComment, User.nome)
+        .join(User, User.id == PostComment.user_id)
+        .filter(PostComment.post_id == post_id)
+        .order_by(PostComment.criado_em.asc())
+        .all()
+    )
+    return [
+        CommentResponse(
+            id=comment.id,
+            post_id=comment.post_id,
+            user_id=comment.user_id,
+            conteudo=comment.conteudo,
+            criado_em=comment.criado_em,
+            autor_nome=nome,
+        )
+        for comment, nome in rows
+    ]
 
 
 @router.get("/{post_id}", response_model=PostResponse)

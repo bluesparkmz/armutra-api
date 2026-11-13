@@ -5,6 +5,13 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
+class ServiceUpdate(BaseModel):
+    titulo: str | None = Field(None, max_length=500)
+    descricao: str | None = None
+    preco: Decimal | None = Field(None, ge=0)
+    categoria: str | None = Field(None, max_length=120)
+
+
 class ServiceCreate(BaseModel):
     titulo: str = Field(..., max_length=500)
     descricao: str
@@ -21,5 +28,8 @@ class ServiceResponse(BaseModel):
     categoria: str
     criado_em: datetime
     impulsionado: bool = False
+    owner_nome: str | None = None
+    owner_foto: str | None = None
+    localizacao: str | None = None
 
     model_config = {"from_attributes": True}

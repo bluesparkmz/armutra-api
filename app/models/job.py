@@ -30,6 +30,10 @@ class Job(Base):
     requisitos: Mapped[str] = mapped_column(Text, nullable=False)
     salario: Mapped[str] = mapped_column(String(120), nullable=False)
     localizacao: Mapped[str] = mapped_column(String(255), nullable=False)
+    # aberta | fechada
+    estado: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="aberta", server_default="aberta"
+    )
     criado_em: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -61,6 +65,10 @@ class JobApplication(Base):
         nullable=False,
     )
     mensagem: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # pendente | aceite | recusada
+    estado: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pendente", server_default="pendente"
+    )
     criado_em: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

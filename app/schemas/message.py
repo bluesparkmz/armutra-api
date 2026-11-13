@@ -24,3 +24,12 @@ class MessageItem(BaseModel):
 class MessagesListResponse(BaseModel):
     conversation_id: UUID
     messages: list[MessageItem]
+
+
+class ConversationSummary(BaseModel):
+    id: UUID
+    outro_user_id: UUID
+    outro_nome: str
+    outro_foto: str | None = None
+    ultima_mensagem: str | None = None
+    atualizado_em: datetime

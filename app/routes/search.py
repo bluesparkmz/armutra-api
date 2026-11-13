@@ -10,6 +10,7 @@ from app.models.user import User, UserType
 from app.schemas.job import JobResponse
 from app.schemas.service import ServiceResponse
 from app.schemas.user import UserPublicResponse
+from app.routes.jobs import _with_empresa, job_to_response
 from app.routes.services_routes import _service_out
 from app.routes.users import _to_public
 from app.services import ads_service
@@ -26,7 +27,7 @@ def search_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(30, ge=1, le=100),
 ) -> list[JobResponse]:
-    qr = db.query(Job)
+    qr = _with_empresa(db.query(Job)).filter(Job.estado == "aberta")
     if localizacao:
         qr = qr.filter(Job.localizacao.ilike(f"%{localizacao}%"))
     if salario:
@@ -41,10 +42,7 @@ def search_jobs(
         .all()
     )
     boosted = ads_service.active_ids(db)["job"]
-    return [
-        JobResponse.model_validate(j).model_copy(update={"impulsionado": j.id in boosted})
-        for j in jobs
-    ]
+    return [job_to_response(j, j.id in boosted) for j in jobs]
 
 
 @router.get("/services", response_model=list[ServiceResponse])
@@ -59,7 +57,7 @@ def search_services(
 ) -> list[ServiceResponse]:
     from decimal import Decimal
 
-    qr = db.query(Service).join(User, User.id == Service.user_id)
+    qr = db.query(Service).options(joinedload(Service.owner)).join(User, User.id == Service.user_id)
     if categoria:
         qr = qr.filter(Service.categoria.ilike(f"%{categoria}%"))
     if preco_max is not None:
