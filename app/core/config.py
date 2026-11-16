@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     UPLOAD_DIR: str = "./uploads"
 
+    # BS Drive. A chave fica só no servidor. Os ficheiros não são gravados no volume.
+    BSDRIVE_API_BASE: str = "https://bsdrive.bluesparkmz.com/api/drive/dev"
+    BSDRIVE_API_KEY: str = ""
+
     # Emails (separados por vírgula) com acesso de administrador ao painel
     ADMIN_EMAILS: str = ""
 

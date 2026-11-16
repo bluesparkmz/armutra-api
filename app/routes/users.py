@@ -1,16 +1,15 @@
-import shutil
 import uuid as uuid_lib
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
 from app.core.security import hash_password, verify_password
 from app.db.session import get_db
 from app.deps import CurrentUser
 from app.models.user import User, UserType
 from app.schemas.user import CandidatoProfileOut, EmpresaProfileOut, UserPublicResponse, UserUpdateRequest
+from app.services import bsdrive
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -108,19 +107,29 @@ async def upload_cv(
     if user.tipo != UserType.CANDIDATO or not user.candidato_profile:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Apenas candidatos podem enviar CV")
 
-    settings = get_settings()
-    upload_root = Path(settings.UPLOAD_DIR)
-    upload_root.mkdir(parents=True, exist_ok=True)
     ext = Path(file.filename or "").suffix.lower() or ".pdf"
-    if ext not in {".pdf", ".doc", ".docx"}:
+    content_types = {
+        ".pdf": "application/pdf",
+        ".doc": "application/msword",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }
+    content_type = content_types.get(ext)
+    if not content_type:
         raise HTTPException(status_code=400, detail="Formato de ficheiro não suportado (use PDF ou Word)")
-
-    dest_name = f"{user.id}{ext}"
-    dest = upload_root / dest_name
-    with dest.open("wb") as buf:
-        shutil.copyfileobj(file.file, buf)
-
-    user.candidato_profile.cv_url = f"/uploads/{dest_name}"
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="O ficheiro está vazio")
+    if len(data) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="O CV passa de 8 MB")
+    try:
+        file_id = await bsdrive.store_bytes(
+            filename=f"{user.id}-cv{ext}",
+            content_type=content_type,
+            data=data,
+        )
+    except bsdrive.StorageError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    user.candidato_profile.cv_url = f"/uploads/files/{file_id}"
     db.commit()
     db.refresh(user)
     return _to_public(user)
